@@ -511,7 +511,7 @@ class DirectiveContainer(object):
 
 class ProjectInfo(object):
 
-    def __init__(self, name, path, reference, domain_by_extension, domain_by_file_pattern, match):
+    def __init__(self, name, path, reference, domain_by_extension, domain_by_file_pattern, match, url=''):
 
         self._name = name
         self._path = path
@@ -519,6 +519,7 @@ class ProjectInfo(object):
         self._domain_by_extension = domain_by_extension
         self._domain_by_file_pattern = domain_by_file_pattern
         self._match = match
+        self._url = url
 
     def name(self):
         return self._name
@@ -528,6 +529,9 @@ class ProjectInfo(object):
 
     def reference(self):
         return self._reference
+
+    def url(self):
+        return self._url
 
     def domain_for_file(self, file_):
 
@@ -568,23 +572,31 @@ class ProjectInfoFactory(object):
             domain_by_file_pattern,
             ):
 
-        self.projects = projects
+        self.projects = {}
+        for key in projects:
+            val = projects[key]
+            if type(val) == tuple:
+                self.projects[key] = val
+            else:
+                self.projects[key] = (val, '')
+
         self.default_project = default_project
         self.domain_by_extension = domain_by_extension
         self.domain_by_file_pattern = domain_by_file_pattern
 
     def default_path(self):
-
-        return self.projects[self.default_project]
+        path, url = self.projects[self.default_project]
+        return path
 
     def create_project_info(self, options):
 
         name = ""
         path = self.default_path()
+        url = ''
 
         if "project" in options:
             try:
-                path = self.projects[options["project"]]
+                path, url = self.projects[options["project"]]
                 name = options["project"]
             except KeyError, e:
                 sys.stderr.write(
@@ -611,7 +623,8 @@ class ProjectInfoFactory(object):
                     reference,
                     self.domain_by_extension,
                     self.domain_by_file_pattern,
-                    self.match
+                    self.match,
+                    url=url
                     )
 
             self.project_info_store[path] = project_info
